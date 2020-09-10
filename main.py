@@ -1,3 +1,8 @@
+#Proyecto para la materia de Pensamiento Computacional para la Ingeniería
+#Esteban Padilla Cerdio
+#Última versión - 10/09/2020
+
+
 import numpy as np
 import cv2 #Librería de OpenCV para python
 
