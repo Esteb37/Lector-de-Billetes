@@ -1,6 +1,6 @@
 #Proyecto para la materia de Pensamiento Computacional para la Ingeniería
 #Esteban Padilla Cerdio
-#Última versión - 25/09/2020
+#Última versión - 2/10/2020
 
 
 import numpy as np
@@ -20,44 +20,20 @@ def get_outlines(img): #Función para obtener todos los contornos
     edges = cv2.Canny(blur_gray, low_threshold, high_threshold) #Utilizar el algoritmo Canny para resaltar contornos
     contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) #Extraer todos los contornos continuos
     #cv2.drawContours(img, contours, -1, (0, 255, 0), 1)
-    return contours
+    return edges
 
-def get_corners(img): #Función para extraer esquinas de los contornos
-    contours = get_outlines(img) #Sacar contornos
-    corners = []
-    #El algoritmo buscará los extremos derecho, izquierdo, superior e inferior
-    #de cada contorno
-    for cnt in contours:
-        max_x = 0  #Coordenada en x más a la derecha
-        min_x = 10000 #Coordenada en x más a la izquierda
-        max_cx = [] #Punto extremo derecho
-        min_cx = [] #punto extremo izquierdo
-        max_y = 0 #Coordenada en y más a la derecha
-        min_y = 10000 #Coordenada en y más a la izquierda
-        max_cy = [] #Punto extremo inferior
-        min_cy = [] #Punto extremo superior
+def get_corners(img): #Función mejorada para obtener las esquinas basada en la función de Harris
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
 
-        for point in cnt:
-            x = point[0][0] #Coordenadas
-            y = point[0][1]
-            if x>max_x: #Si es el más lejano a la derecha
-                max_c = [x,y] #Es el nuevo punto extremo derecho
-                max_x = x #Su posición en x es la más lejana a la derecha
+    gray = np.float32(gray)
+    dst = cv2.cornerHarris(gray,2,3,0.04)
+    dst = cv2.dilate(dst,None)
 
-            #Se repite lo mismo con las otras tres coordenadas
-            elif x<min_x:
-                min_c = [x,y]
-                min_x = x;
-            if y>max_y:
-                max_cy = [x,y]
-                max_y = y
-            elif y<min_y:
-                min_cy = [x,y]
-                min_y = y;
+    height, width, channels = img.shape
+    blank_image = np.zeros((height,width,3), np.uint8)
+    blank_image[dst>0.01*dst.max()]=[0,0,255]
 
-        corners+=[max_cx,min_cx,max_cy,min_cy] #Se agrega a la lista de esquinas
-    clean = delete_clumps(corners,img.shape)
-    return clean
+    return blank_image
 
 def delete_clumps(corners,shape): #Función para eliminar puntos acumulados
     radius = 5 #Radio de "soledad" de un punto
