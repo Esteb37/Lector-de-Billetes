@@ -1,13 +1,13 @@
 #Proyecto para la materia de Pensamiento Computacional para la Ingeniería
 #Esteban Padilla Cerdio
-#Última versión - 2/10/2020
+#Última versión - 9/10/2020
 
 
 import numpy as np
 import math
 import cv2 #Librería de OpenCV para python
 from matplotlib import pyplot as plt
-
+import statistics
 
 
 def get_outlines(img): #Función para obtener todos los contornos
@@ -18,123 +18,95 @@ def get_outlines(img): #Función para obtener todos los contornos
     low_threshold = 50
     high_threshold = 150
     edges = cv2.Canny(blur_gray, low_threshold, high_threshold) #Utilizar el algoritmo Canny para resaltar contornos
-    contours, hierarchy = cv2.findContours(edges, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) #Extraer todos los contornos continuos
-    #cv2.drawContours(img, contours, -1, (0, 255, 0), 1)
-    return edges
+    #cv2.imshow("edges",edges)
+    return edges #Regresar una matriz con los contornos en blanco y lo demás en negro
 
-def get_corners(img): #Función mejorada para obtener las esquinas basada en la función de Harris
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+def get_cont(img): #Función para obtener grupos de líneas continuas
 
-    gray = np.float32(gray)
-    dst = cv2.cornerHarris(gray,2,3,0.04)
-    dst = cv2.dilate(dst,None)
+    edges = [*zip(*get_outlines(img))] #Obtener contornos e invertir la matriz para poder analizarla de derecha a izquierda
 
-    height, width, channels = img.shape
-    blank_image = np.zeros((height,width,3), np.uint8)
-    blank_image[dst>0.01*dst.max()]=[0,0,255]
+    pixels = [(ix,iy) for ix, row in enumerate(edges) for iy, i in enumerate(row) if i == 255] #Hacer un grupo con todos los puntos pertenecientes a un contorno
 
-    return blank_image
+    lines = {} #Tabla HASH que permitirá asociar puntos cercanos a un punto de origen
+    groups = [] #Lista de líneas agrupadas
 
-def delete_clumps(corners,shape): #Función para eliminar puntos acumulados
-    radius = 5 #Radio de "soledad" de un punto
-    height, width, channels = shape
-    positions = [[0]*(width+radius*2)]*(height+radius*2)  #Matriz de posiciones de todos los puntos
-    for corner in corners: #Llenamos la matriz con 1 si hay un punto ahí
-        if(len(corner)>0):
-            positions[corner[1]][corner[0]] = 1
-    clean = [] #Lista de puntos no acumulados
-    for p in corners:
-        quadrants = [0,0,0,0] #Se utilizan los cuadrantes para detectar acumulación
-                              #Porque un punto con puntos en más de dos cuadrantes ya
-                              #Puede ser considerado un conjunto, si solo es uno
-                              #O dos cuadrantes puede ser simplemente una línea
-        if(len(p)>0):
-            for y in range(p[1]-radius,p[1]+radius+1): #Buscamos las coordenadas dentro del radio
-                for x in range(p[0]-radius,p[0]+radius+1):
-                    if positions[y][x]!=0 and (y!=p[1] and x!=p[0]): #Si se encuentra un punto
-                                                              #Se marca ese cuadrante como "ocupado"
-                        if x>=p[0] and y>=p[1]:
-                            quadrants[0] = 1
-                        elif x<p[0] and y>=p[1]:
-                            quadrants[1] = 1
-                        elif x<p[0] and y<p[1]:
-                            quadrants[2] = 1
-                        elif x>=p[0] and y<p[1]:
-                            quadrants[3] = 1
-            clumps = 0
-            for i in range(4):
-                clumps+=quadrants[i]
-            if(clumps<=2): #Si hay menos de dos cuadrantes ocupados, puede no ser considerado
-                            #Una acumulación
-                clean.append(p)
-    return clean
+    radius = 3 #Distancia máxima para considerar dos puntos como aledaños
+    r = range(-radius,radius+1)
 
-def getAngle(a,b): #Función para obtener los ángulos entre dos puntos
-    if(a[1]-b[1]==0):
-        return 0
-    elif(a[0]-b[0]==0):
-        return 90
-    else:
-        return math.degrees(math.atan((a[1]-b[1])/(a[0]-b[0])))
+    for pixel in pixels: #Por cada pixel perteneciente a un contorno
 
-def rectangles(img): #Función para encontrar los rectángulos
-    corners = get_corners(img) #Conseguimos las esquinas
-    diagonals = [] #Lista de puntos con distancias mayores a un mínimo
-    for i in range(len(corners)):
-        a = corners[i]
-        if(len(a)>0                             #Hacemos todos los pares posibles
-            for j in range(i+1,len(corners)):
-                b = corners[j]
-                if(len(b)>0):
-                    dist = ((a[0]-b[0])**2+(a[1]-b[1])**2)**(1/2)
+        try: #Si ese pixel ya fue asociado a un punto de origen
+            origin = lines[str(pixel)] #Obtener el punto de origen
+            for i in r:
+                for j in r: #Atravesar todos los pixeles pertenecientes a su radio
+                    try:
+                        if (i!=0 or j!=0) and edges[pixel[0]+i][pixel[1]+j]==255: #Si es un pixel diferente y es parte de un contorno
+                            p = (pixel[0]+i,pixel[1]+j)
+                            try:
+                                bin = lines[str(p)] #Probar si ya ha sido asociado
+                            except KeyError:
+                                index = lines[origin]
+                                groups[index].add(p) #Agregar a un grupo de puntos asociados
+                                lines[str(p)] = origin #Asociar al punto de origen
+                    except IndexError:
+                        pass
 
-                    if(dist>200): #Si la distancia del par es mayor, puede ser considerada una diagonal
-                        angle = getAngle(a,b) #Se guarda el ángulo para después buscar diagonales no paralelas
-                        diagonals.append([dist,a,b,angle])
+        except KeyError: #Si el punto no ha sido asociado a nada, o sea que es el primero de su grupo
+            groups.append(set([pixel])) #Crear un nuevo grupo con ese punto
 
-    diagonals.sort(key=lambda x:x[0]) #Se ordenan con base en la distancia
-    l = range(len(distances))
-    rectangles = []
-    for a in diagonals:
-        for b in diagonals:
-            if a is not b: #Por todos los pares de diagonal posibles
-                amag = a[0] #Magnitud de primera diagonal
-                bmag = b[0] #Magnitud de diagonal línea
-                ap1 = a[1] #Punto 1 de diagonal 1
-                ap2 = a[2] #Punto 2 de diagonal 1
-                bp1 = b[1] #Punto 1 de diagonal 2
-                bp2 = b[2] #Punto 2 de diagonal 2
-                aang = a[3] #Ángulo de diagonal 1
-                bang = b[3] #Ángulo de diagonal 2
-                if(abs(amag-bmag)<5): #Si las diagonales tienen una longitud similar
-                    cxa = int((ap2[0]+ap1[0])/2)
-                    cya = int((ap2[1]+ap1[1])/2)    #Se buscan los centros de ambas diagonales
-                    cxb = int((bp2[0]+bp1[0])/2)
-                    cyb = int((bp2[1]+bp1[1])/2)
-                    c_diff = ((cxa-cxb)**2+(cya-cyb)**2)**(1/2)  #Se obtiene la distancia entre los centros
-                    angle_diff = abs(aang-bang) #se obtiene el ángulo entre ambas diagonales
-                    if(c_diff<5 and angle_diff>10): #Si el centro de ambas diagonales está cercano y tienen un ángulo considerable, hemos encontrado un rectángulo
-                        rectangles.append([ap1,ap2,bp1,bp2])
+            index = len(groups)-1
+            lines[str(pixel)] = index #Asociar este punto de origen con el índice de la matriz de grupos
 
-    for rect in rectangles:
-        cv2.line(img,(rect[0][0],rect[0][1]),(rect[1][0],rect[1][1]),(0,250,0),2)
-        cv2.line(img,(rect[2][0],rect[2][1]),(rect[3][0],rect[3][1]),(250,0,0),2)
-        cv2.imshow("frame",img)"""
+            for i in r:
+                for j in r: #Atravesar todos los puntos de su comunidad aledaña
+                    try:
+                        if (i!=0 or j!=0) and edges[pixel[0]+i][pixel[1]+j]==255: #Si es un pixel diferente y es parte de un contorno
+                            p = (pixel[0]+i,pixel[1]+j)
+                            groups[index].add(p)  #Agregar al grupo
+                            lines[str(p)] = str(pixel) #Asociar con el origen
+                    except IndexError:
+                        pass
+    return groups #Regresar grupos de líneas continuas
+
+def get_lines(img): #Función para obtener líneas rectas
+    groups = get_cont(img) #Obtener grupos
+
+    lines = [] #Lista de grupos que sean considerados líneas rectas aproximadas
+
+    for group in groups: #Por cada grupo de puntos
+        group = list(group)
+        origin = group[0] #Asignar el primer punto como el origen
+        slopes = [] #lista de pendientes
+        for i,point in enumerate(group):
+            if i>0 and (point[0]-origin[0])!=0:
+                slope = (point[1]-origin[1])/(point[0]-origin[0]) #Agregar pendiente de punto n con origen
+                slopes.append(slope)
+        try:
+            if statistics.stdev(slopes)<0.5: #si la variación estandar de las pendientes es baja, significa que la pendiente no varía, por lo que es una línea recta
+                lines.append(group) #Agregar solo si es línea recta
+        except:
+            pass
+    return lines #Regresar líneas rectas
+
 
 
 
 if __name__ == "__main__":
-    capture = cv2.VideoCapture(1,cv2.CAP_DSHOW) #Obtener Webcam
+    capture = cv2.VideoCapture(0,cv2.CAP_DSHOW) #Obtener Webcam
+
+
     while True:
+
         ret, img= capture.read() #Obtener imagen de la webcam
 
+        get_lines(img)
         """Puesto que el feed de la cámara está constantemente cambiando e intentar
         buscar un rectángulo continuo (para encontrar el billete), sería
         extremadamente difícil por factores como sombras, posición, los dedos
         que están sosteniendo el billete, etc, la técnica que se utilizará será
-        sacar todos los contornos y de ellos extraer sus extremos, para después
-        de esos extremos producidos ver cuáles forman rectángulos aproximados"""
+        obtener todos los contornos y de ahí extraer los grupos de puntos que pertenezcan
+        a líneas continuas, de las cuales se filtrarán solo las líneas rectas y de ahí
+        podremos buscar rectángulos."""
          #Conseguir todas las esquinas presentes para después encontrar rectángulos
-        get_corners(img)
         if cv2.waitKey(1) & 0xFF == ord('e'): #Terminar feed si se presiona "e"
-            break
+            g+=1
