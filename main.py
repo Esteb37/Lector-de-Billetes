@@ -214,7 +214,7 @@ def get_bills(img): #Función para definir la probabilidad del valor del billete
 if __name__ == "__main__":
     global ax
 
-    print(" ---------------------------------------------------------------------------------------\n\nBienvenido al Prototipo para el Detector de Billetes. El propósito de este proyecto es fungir como una muestra de una posible aplicación capaz de detectar los valores de billetes por medio de la cámara, y comunicárselos a personas invidentes por medio de otros sentidos como el oído. Por el momento, surgen algunas limitaciones con calidades de fotografías distintas, por lo que se han preparado diferentes imágenes cuya efectividad no ha sido disminuida por factores como luz o resolución.\n\nAntes de comenzar, asegúrate de haber incluído las imágenes precargadas en la misma carpeta que este código \n\n --------------------------------------------------------------------------------------- \n")
+    print(" ---------------------------------------------------------------------------------------\n\nBienvenido al Prototipo para el Detector de Billetes. El propósito de este proyecto es fungir como una muestra de una posible aplicación capaz de detectar los valores de billetes por medio de la cámara, y comunicárselos a personas invidentes por medio de otros sentidos como el oído. Por el momento, surgen algunas limitaciones con calidades de fotografías distintas, por lo que se han preparado diferentes imágenes cuya efectividad no ha sido disminuida por factores como luz o resolución.\n\nAntes de comenzar, asegúrese de haber incluído las imágenes precargadas en la misma carpeta que este código \n\n --------------------------------------------------------------------------------------- \n")
     imagenes = ["50.png","502.png","20.png","202.png","200.png","2002.png","203.png"]
     while True:
         print("\nSeleccione un número del 1 al 7 para analizar una de las fotografías precargadas. Seleccione -1 para terminar: \n")
@@ -224,7 +224,7 @@ if __name__ == "__main__":
         elif(i>=1 and i<=len(imagenes)):
             src = imagenes[i-1]
         else:
-            print("Por favor seleccione un número válido\n")
+            print("\nPor favor seleccione un número válido\n")
             continue
 
         img = cv2.imread(src,1) #se obtiene la imagen
@@ -237,9 +237,11 @@ if __name__ == "__main__":
         ax[1, 1].set_title("Masked")
         ax[1, 1].axis('off')
 
+        print("------------------Valor: $"+str(prob[2])+" - Probabilidad "+str(round(prob[0]))+"%---------------\n")
+        print("Cierre la ventana con imágenes para poder ingresar otro número: \n")
         ax[1, 1].text(0.5,-0.1, "Valor: $"+str(prob[2])+" - Probabilidad "+str(round(prob[0]))+"%", size=20, ha="center",
                  transform=ax[1, 1].transAxes) #Se publica el resultado
         fig.tight_layout()
 
         plt.show()
-    print("Muchas gracias por probar este prototipo. Vuelva pronto.")
+    print("\n--------------Muchas gracias por probar este prototipo. Vuelva pronto.-------------------")
