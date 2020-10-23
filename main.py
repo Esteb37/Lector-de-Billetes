@@ -163,7 +163,7 @@ def get_rects(img): #Función para obtener posibles rectángulos
                         cv2.line(copy,tuple(p3),tuple(p4),(0,255,0),3)
                         cv2.line(copy,tuple(p4),tuple(p1),(0,255,0),3)
 
-    ax[1, 0].imshow(cv2.cvtColor(copy, cv2.COLOR_BGR2RGByth))
+    ax[1, 0].imshow(cv2.cvtColor(copy, cv2.COLOR_BGR2RGB))
     ax[1, 0].set_title("Rectángulos") #Se publica la imagen con los rectángulos posibles
     ax[1, 0].axis('off')
     return rects
@@ -214,7 +214,7 @@ def get_bills(img): #Función para definir la probabilidad del valor del billete
 if __name__ == "__main__":
     global ax
 
-    print(" ---------------------------------------------------------------------------------------\n\nBienvenido al Prototipo para el Detector de Billetes. El propósito de este proyecto es fungir como una muestra de una posible aplicación capaz de detectar los valores de billetes por medio de la cámara, y comunicárselos a personas invidentes por medio de otros sentidos como el oído. Por el momento, surgen algunas limitaciones con calidades de fotografías distintas, por lo que se han preparado diferentes imágenes cuya efectividad no ha sido disminuida por factores como luz o resolución.\n\n --------------------------------------------------------------------------------------- \n")
+    print(" ---------------------------------------------------------------------------------------\n\nBienvenido al Prototipo para el Detector de Billetes. El propósito de este proyecto es fungir como una muestra de una posible aplicación capaz de detectar los valores de billetes por medio de la cámara, y comunicárselos a personas invidentes por medio de otros sentidos como el oído. Por el momento, surgen algunas limitaciones con calidades de fotografías distintas, por lo que se han preparado diferentes imágenes cuya efectividad no ha sido disminuida por factores como luz o resolución.\n\nAntes de comenzar, asegúrate de haber incluído las imágenes precargadas en la misma carpeta que este código \n\n --------------------------------------------------------------------------------------- \n")
     imagenes = ["50.png","502.png","20.png","202.png","200.png","2002.png","203.png"]
     while True:
         print("\nSeleccione un número del 1 al 7 para analizar una de las fotografías precargadas. Seleccione -1 para terminar: \n")
@@ -242,3 +242,4 @@ if __name__ == "__main__":
         fig.tight_layout()
 
         plt.show()
+    print("Muchas gracias por probar este prototipo. Vuelva pronto.")
